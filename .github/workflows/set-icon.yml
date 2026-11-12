@@ -16,44 +16,47 @@ jobs:
 
       - name: Prepare icon files
         run: |
-          curl -sSL "https://aka.doubaocdn.com/s/mdvWh0K3Py" -o icon-src.png
-          pip install --quiet pillow
-          python - <<'PY'
-import os
-from PIL import Image
-src = Image.open('icon-src.png').convert('RGBA')
-w, h = src.size
-cut = int(min(w, h) * 0.06)
-src = src.crop((cut, cut, w - cut, h - cut))
-for size, name in [(180, 'apple-touch-icon.png'), (192, 'icon-192.png'), (512, 'icon-512.png')]:
-    src.resize((size, size), Image.LANCZOS).save(name)
-print('icons:', sorted(os.listdir('.')))
-PY
+          echo "download start"
+          curl -fsSL "https://aka.doubaocdn.com/s/mdvWh0K3Py" -o icon-src.png
+          ls -la icon-src.png
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          import os
+          from PIL import Image
+          src = Image.open('icon-src.png').convert('RGBA')
+          w, h = src.size
+          print('source size', w, h)
+          cut = int(min(w, h) * 0.06)
+          src = src.crop((cut, cut, w - cut, h - cut))
+          for size, name in [(180, 'apple-touch-icon.png'), (192, 'icon-192.png'), (512, 'icon-512.png')]:
+              src.resize((size, size), Image.LANCZOS).save(name)
+          print('icons done', sorted(os.listdir('.')))
+          PY
 
       - name: Inject icon links
         run: |
-          python - <<'PY'
-from pathlib import Path
-LINKS = (
-    '<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">\n'
-    '<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">\n'
-    '<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">\n'
-)
-for name in ('index.html', 'StudyHub_v4.html'):
-    p = Path(name)
-    if not p.exists():
-        continue
-    t = p.read_text(encoding='utf-8')
-    if 'apple-touch-icon' in t:
-        print('skip', name)
-        continue
-    if '</head>' not in t:
-        print('no head tag', name)
-        continue
-    t = t.replace('</head>', LINKS + '</head>', 1)
-    p.write_text(t, encoding='utf-8')
-    print('injected', name)
-PY
+          python3 - <<'PY'
+          from pathlib import Path
+          LINKS = (
+              '<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">\n'
+              '<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">\n'
+              '<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">\n'
+          )
+          for name in ('index.html', 'StudyHub_v4.html'):
+              p = Path(name)
+              if not p.exists():
+                  continue
+              t = p.read_text(encoding='utf-8')
+              if 'apple-touch-icon' in t:
+                  print('skip', name)
+                  continue
+              if '</head>' not in t:
+                  print('no head tag', name)
+                  continue
+              t = t.replace('</head>', LINKS + '</head>', 1)
+              p.write_text(t, encoding='utf-8')
+              print('injected', name)
+          PY
 
       - name: Commit icons
         run: |
